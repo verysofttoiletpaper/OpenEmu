@@ -70,6 +70,7 @@ NSString *const OEGameControlsBarFadeOutDelayKey        = @"fadeoutdelay";
 @interface OEGameControlsBar ()
 {
     id              _eventMonitor;
+    id              _appActivatedObserver;
     NSTimer        *_fadeTimer;
     NSArray        *_filterPlugins;
     NSUInteger      _openMenus;
@@ -124,7 +125,13 @@ NSString *const OEGameControlsBarFadeOutDelayKey        = @"fadeoutdelay";
         _openMenus = 0;
         _controlsView = barView;
 
-        [NSCursor setHiddenUntilMouseMoves:YES];
+        [self hideMouse] ;
+
+        // Hide the mouse also when switching back from other applications.
+        _appActivatedObserver = [[NSNotificationCenter defaultCenter] addObserverForName:NSApplicationDidBecomeActiveNotification object:nil queue:nil usingBlock:^(NSNotification *note)
+        {
+            [self performSelector:@selector(hideMouse) withObject:nil afterDelay:0.3]; // Delay because fullscreen spaces animation unhide the mouse.
+        }];
 
         // Setup plugins menu
         NSMutableSet   *filterSet     = [NSMutableSet set];
@@ -143,6 +150,8 @@ NSString *const OEGameControlsBarFadeOutDelayKey        = @"fadeoutdelay";
     _gameViewController = nil;
 
     [NSEvent removeMonitor:_eventMonitor];
+
+    [[NSNotificationCenter defaultCenter] removeObserver:_appActivatedObserver];
 }
 
 #pragma mark - Cheats
@@ -178,6 +187,11 @@ NSString *const OEGameControlsBarFadeOutDelayKey        = @"fadeoutdelay";
     [_fadeTimer invalidate];
     _fadeTimer = nil;
 
+    [self hideMouse] ;
+}
+
+- (void)hideMouse
+{
     [NSCursor setHiddenUntilMouseMoves:YES];
 }
 
